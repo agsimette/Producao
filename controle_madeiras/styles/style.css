@@ -1,0 +1,73 @@
+/* =========================
+   CAMPOS DE ENTRADA
+========================= */
+input[type="text"],
+input[type="number"] {
+    background-color: #e8f5e9 !important; /* verde claro */
+    border: 1px solid #4caf50 !important;
+    border-radius: 6px !important;
+}
+
+/* Selectbox */
+div[data-baseweb="select"] > div {
+    background-color: #e8f5e9 !important;
+    border: 1px solid #4caf50 !important;
+    border-radius: 6px !important;
+}
+
+/* =========================
+   CAMPOS OBRIGATÓRIOS
+========================= */
+.obrigatorio label::after {
+    content: " *";
+    color: red;
+    font-weight: bold;
+}
+
+/* =========================
+   BOTÃO GERAR (VERDE)
+========================= */
+div[data-testid="stButton"] > button {
+    background-color: #1b5e20 !important; /* mesmo verde da sidebar */
+    color: white !important;
+    font-weight: bold !important;
+    height: 45px !important;
+    border-radius: 8px !important;
+    border: none !important;
+}
+
+div[data-testid="stButton"] > button:hover {
+    background-color: #2e7d32 !important;
+}
+
+/* =========================
+   BOTÃO SAÍDA (VERMELHO)
+========================= */
+button.saida {
+    background-color: #c62828 !important;
+    color: white !important;
+    font-weight: bold !important;
+    height: 45px;
+    border-radius: 8px;
+}
+
+button.saida:hover {
+    background-color: #8e0000 !important;
+}
+
+/* =========================
+   MENU LATERAL / SIDEBAR
+========================= */
+section[data-testid="stSidebar"] {
+    background-color: #1b5e20;
+}
+
+section[data-testid="stSidebar"] * {
+    color: white !important;
+    font-weight: 600;
+}
+
+section[data-testid="stSidebar"] h2,
+section[data-testid="stSidebar"] h3 {
+    color: #c8e6c9 !important;
+}
