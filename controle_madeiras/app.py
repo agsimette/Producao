@@ -61,43 +61,39 @@ st.session_state["pagina"] = menu
 
 estoque = carregar_estoque()
 
-# =====================
-# GERAR ETIQUETAS
-# =====================
-if menu == "📦 Gerar Etiquetas":
-    st.header("Gerar Etiquetas")
+import io
 
-    cliente = st.text_input("Cliente")
-    fabrica = st.selectbox(
-    "Unidade Fabril",
-    ["Matriz", "Filial"]
-    )
-    medidas = st.text_input("Medidas")
-    tipo = st.selectbox("Tipo", ["Gradeada", "Empacotada"])
-    quantidade = st.number_input("Quantidade", 1, 500, 1)
+if st.button("Gerar"):
+    for _ in range(quantidade):
+        dados = {
+            "id": str(uuid.uuid4()),
+            "cliente": cliente,
+            "fabrica": fabrica,
+            "medidas": medidas,
+            "tipo": tipo
+        }
 
-    if st.button("Gerar"):
-        os.makedirs("etiquetas", exist_ok=True)
+        json_texto = json.dumps(dados, ensure_ascii=False)
+        json_url = quote(json_texto)
 
-        for _ in range(quantidade):
-            dados = {
-                "id": str(uuid.uuid4()),
-                "cliente": cliente,
-                "fabrica": fabrica,
-                "medidas": medidas,
-                "tipo": tipo
-            }
+        link = f"{IP_SERVIDOR}/?qr={json_url}"
 
-            json_texto = json.dumps(dados, ensure_ascii=False)
-            json_url = quote(json_texto)
+        qr = qrcode.make(link)
 
-            cache_buster = str(uuid.uuid4())  # evita cache
-            link = f"{IP_SERVIDOR}/?qr={json_url}"
+        buffer = io.BytesIO()
+        qr.save(buffer, format="PNG")
+        buffer.seek(0)
 
-            qr = qrcode.make(link)
-            qr.save(f"etiquetas/{dados['id']}.png")
+        st.image(buffer, caption="📦 QR Code da Etiqueta")
 
-        st.success("✅ Etiquetas geradas com sucesso!")
+        st.download_button(
+            label="⬇️ Baixar etiqueta",
+            data=buffer,
+            file_name=f"etiqueta_{dados['id']}.png",
+            mime="image/png"
+        )
+
+    st.success("✅ Etiquetas geradas com sucesso!")
 
 
 # =====================
