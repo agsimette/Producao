@@ -6,6 +6,11 @@ import os
 from datetime import datetime
 from urllib.parse import quote, unquote
 import json
+import io
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
+from reportlab.lib.units import cm
+
 
 ARQUIVO_ESTOQUE = "estoque.xlsx"
 IP_SERVIDOR = os.getenv("IP_LOCAL")
@@ -35,6 +40,31 @@ if "qr" in st.query_params:
 def salvar_estoque(df):
     df.to_excel(ARQUIVO_ESTOQUE, index=False)
 
+
+def gerar_pdf(caminho_pdf, imagens):
+    largura, altura = A4
+    c = canvas.Canvas(caminho_pdf, pagesize=A4)
+
+    etiqueta_larg = (largura - 3 * cm) / 2
+    etiqueta_alt = (altura - 3 * cm) / 2
+
+    posicoes = [
+        (1*cm, altura - etiqueta_alt - 1*cm),
+        (etiqueta_larg + 2*cm, altura - etiqueta_alt - 1*cm),
+        (1*cm, altura - 2*etiqueta_alt - 2*cm),
+        (etiqueta_larg + 2*cm, altura - 2*etiqueta_alt - 2*cm),
+    ]
+
+    for i, img in enumerate(imagens):
+        if i % 4 == 0 and i != 0:
+            c.showPage()
+
+        x, y = posicoes[i % 4]
+        c.drawImage(img, x, y, etiqueta_larg, etiqueta_alt)
+
+    c.save()
+
+
 # =====================
 # Interface
 # =====================
@@ -61,39 +91,67 @@ st.session_state["pagina"] = menu
 
 estoque = carregar_estoque()
 
-import io
+# =====================
+# GERAR ETIQUETAS
+# =====================
+if menu == "📦 Gerar Etiquetas":
+    st.header("Gerar Etiquetas")
 
-if st.button("Gerar"):
-    for _ in range(quantidade):
-        dados = {
-            "id": str(uuid.uuid4()),
-            "cliente": cliente,
-            "fabrica": fabrica,
-            "medidas": medidas,
-            "tipo": tipo
-        }
+    cliente = st.text_input("Cliente")
+    fabrica = st.selectbox(
+    "Unidade Fabril",
+    ["Matriz", "Filial"]
+    )
+    medidas = st.text_input("Medidas")
+    tipo = st.selectbox("Tipo", ["Gradeada", "Empacotada"])
+    quantidade = st.number_input("Quantidade", 1, 500, 1)
 
-        json_texto = json.dumps(dados, ensure_ascii=False)
-        json_url = quote(json_texto)
+    if st.button("Gerar", key="btn_gerar"):
+        data_hora = datetime.now().strftime("%Y-%m-%d_%H-%M")
+        nome_pasta = f"{cliente}_{data_hora}".replace(" ", "_")
 
-        link = f"{IP_SERVIDOR}/?qr={json_url}"
+        pasta_lote = os.path.join("etiquetas", nome_pasta)
+        os.makedirs(pasta_lote, exist_ok=True)
 
-        qr = qrcode.make(link)
+        imagens = []
 
-        buffer = io.BytesIO()
-        qr.save(buffer, format="PNG")
-        buffer.seek(0)
+        for i in range(quantidade):
+            dados = {
+                "id": str(uuid.uuid4()),
+                "cliente": cliente,
+                "fabrica": fabrica,
+                "medidas": medidas,
+                "tipo": tipo
+            }
 
-        st.image(buffer, caption="📦 QR Code da Etiqueta")
+            json_texto = json.dumps(dados, ensure_ascii=False)
+            json_url = quote(json_texto)
 
-        st.download_button(
-            label="⬇️ Baixar etiqueta",
-            data=buffer,
-            file_name=f"etiqueta_{dados['id']}.png",
-            mime="image/png"
-        )
+            link = f"{IP_SERVIDOR}/?qr={json_url}"
 
-    st.success("✅ Etiquetas geradas com sucesso!")
+            caminho_img = os.path.join(pasta_lote, f"etiqueta_{i+1}.png")
+
+            qr = qrcode.make(link)
+            qr.save(caminho_img)
+
+            imagens.append(caminho_img)
+
+        caminho_pdf = os.path.join(pasta_lote, "etiquetas.pdf")
+        gerar_pdf(caminho_pdf, imagens)
+
+        st.success("✅ PDF gerado com sucesso!")
+
+        with open(caminho_pdf, "rb") as f:
+            st.download_button(
+                label="⬇️ Baixar PDF das Etiquetas",
+                data=f,
+                file_name="etiquetas.pdf",
+                mime="application/pdf"
+            )
+
+
+        #st.success("✅ Etiquetas geradas com sucesso!")
+
 
 
 # =====================
